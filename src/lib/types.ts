@@ -39,3 +39,29 @@ export interface Recommendation {
   klient: Klient;
   alternativeKlienten?: Klient[];
 }
+
+/** Stats for a single field: added vs removed (e.g. min/max/durchschnitt or counts) */
+export type FeldStatsValue = number | { [key: string]: number | FeldStatsValue };
+
+export interface FeldDiff {
+  hinzugefügt?: Record<string, FeldStatsValue>;
+  entfernt?: Record<string, FeldStatsValue>;
+}
+
+export interface DiffAnzahl {
+  alt: number;
+  neu: number;
+  hinzugefügt: number;
+  entfernt: number;
+}
+
+export interface DiffStats {
+  felder: Record<string, FeldDiff>;
+  anzahl: DiffAnzahl;
+}
+
+export interface DiffsResponse {
+  hinzugefügt: object[];
+  entfernt: object[];
+  stats: DiffStats;
+}

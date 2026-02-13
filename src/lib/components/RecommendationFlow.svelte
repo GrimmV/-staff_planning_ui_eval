@@ -120,7 +120,7 @@
     {/if}
   </section>
   {#if isReviewOverlayOpen}
-    <ReviewOverlay onClose={closeReviewOverlay} />
+    <ReviewOverlay onClose={closeReviewOverlay} new_ma={current.mitarbeiter.id} new_client={current.klient.id} />
   {/if}
 {/if}
 
