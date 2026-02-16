@@ -20,12 +20,7 @@
     error = null,
   } = $props<{
     recommendations: RecommendationEntry[];
-    onAssign?: (payload: {
-      mitarbeiter: Mitarbeiter;
-      klient: Klient;
-      index: number;
-      isAlternative?: boolean;
-    }) => void;
+    onAssign?: (payload: { mitarbeiter: string; klient: string }) => void;
     onComplete?: () => void;
     ma_assignments?: string[];
     klient_assignments?: string[];
@@ -56,37 +51,24 @@
     isReviewOverlayOpen = false;
   };
 
-  const handleAssign = (
-    payload: {
-      mitarbeiter: Mitarbeiter;
-      klient: Klient;
-    },
-    isAlternative = false,
-  ) => {
-    onAssign?.({ ...payload, isAlternative });
+  const handleAssign = (payload: { mitarbeiter: string; klient: string }) => {
+    onAssign?.({ ...payload });
     advance();
   };
 
-  const handleAccept = (payload: {
-    mitarbeiter: Mitarbeiter;
-    klient: Klient;
-  }) => {
-    const isAlternative = current ? payload.klient !== current.klient : false;
-    handleAssign(payload, isAlternative);
+  const handleAccept = (payload: { mitarbeiter: string; klient: string }) => {
+    isReviewOverlayOpen = false;
+    console.log("handleAccept", payload);
+    handleAssign(payload);
   };
 
   const handleSelectAlternative = (payload: {
-    mitarbeiter: Mitarbeiter;
-    klient: Klient;
+    mitarbeiter: string;
+    klient: string;
   }) => {
-    active_client = payload.klient.id;
-    active_mitarbeiter = payload.mitarbeiter.id;
+    active_client = payload.klient;
+    active_mitarbeiter = payload.mitarbeiter;
   };
-
-  $effect(() => {
-    console.log("ma_assignments", ma_assignments);
-    console.log("klient_assignments", klient_assignments);
-  });
 </script>
 
 {#if remaining === 0}
@@ -136,6 +118,7 @@
       onClose={closeReviewOverlay}
       new_ma={active_mitarbeiter ?? ""}
       new_client={active_client ?? ""}
+      onAccept={handleAccept}
       {ma_assignments}
       {klient_assignments}
     />

@@ -66,7 +66,7 @@ export interface SignificantAssignment {
 }
 
 export interface Assessment {
-  score: "akzeptiere" | "prüfen" | "ablehnen";
+  score: "akzeptieren" | "eher akzeptieren" | "eher ablehnen" | "ablehnen";
   assessment: string;
   short_assessment: string;
   significant_assignments: SignificantAssignment[];

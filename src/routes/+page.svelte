@@ -33,10 +33,9 @@
 <main class="min-h-screen bg-base-200 flex items-center justify-center p-4">
   <RecommendationFlow
     {recommendations}
-    onAssign={({ mitarbeiter, klient, index, isAlternative }) => {
-      console.log("zugeordnet", { mitarbeiter, klient, index, isAlternative });
-      ma_assignments = [...ma_assignments, mitarbeiter.id];
-      klient_assignments = [...klient_assignments, klient.id];
+    onAssign={({ mitarbeiter, klient }) => {
+      ma_assignments = [...ma_assignments, mitarbeiter];
+      klient_assignments = [...klient_assignments, klient];
     }}
     onComplete={() => {
       console.log("alle Klienten wurden zugeordnet");

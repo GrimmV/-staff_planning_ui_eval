@@ -11,13 +11,13 @@
     onSelectAlternative,
     onOpenReview,
   } = $props<{
-    mitarbeiter: Mitarbeiter;
-    klient: Klient;
+    mitarbeiter: string;
+    klient: string;
     alternativeKlienten?: Klient[];
-    onAccept?: (payload: { mitarbeiter: Mitarbeiter; klient: Klient }) => void;
+    onAccept?: (payload: { mitarbeiter: string; klient: string }) => void;
     onSelectAlternative?: (payload: {
-      mitarbeiter: Mitarbeiter;
-      klient: Klient;
+      mitarbeiter: string;
+      klient: string;
     }) => void;
     onOpenReview?: () => void;
   }>();
@@ -77,7 +77,7 @@
     if (target && !reviewContainer.contains(target)) {
       isReviewOpen = false;
     }
-  };
+    };
 
   onMount(() => {
     document.addEventListener("click", handleDocumentClick);
@@ -87,7 +87,8 @@
   });
 
   const handleAccept = () => {
-    onAccept?.({ mitarbeiter, klient: currentKlient });
+    onAccept?.({ mitarbeiter: mitarbeiter.id, klient: currentKlient.id });
+    console.log("handleAccept", mitarbeiter.id, currentKlient.id);
   };
 
   const handleReviewAlternative = () => {
@@ -96,7 +97,8 @@
 
   const handleSelectAlternative = (alternative: Klient) => {
     selectedKlient = alternative;
-    onSelectAlternative?.({ mitarbeiter, klient: alternative });
+
+    onSelectAlternative?.({ mitarbeiter: mitarbeiter.id, klient: alternative.id });
   };
 
   const handleSelectMainKlient = () => {

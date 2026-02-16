@@ -3,12 +3,13 @@
   import ReviewStats from './ReviewStats.svelte';
   import ReviewAssignments from './ReviewAssignments.svelte';
 
-  const { onClose, new_ma, new_client, ma_assignments, klient_assignments } = $props<{
+  const { onClose, new_ma, new_client, ma_assignments, klient_assignments, onAccept } = $props<{
     onClose: () => void;
     new_ma: string;
     new_client: string;
     ma_assignments: string[];
     klient_assignments: string[];
+    onAccept: (payload: { mitarbeiter: string; klient: string }) => void;
   }>();
 
   let diffs = $state<DiffsResponse[]>([]);
@@ -71,9 +72,19 @@
 
   const scoreOptions = [
     { id: 'akzeptieren' as const, label: 'Akzeptieren', activeClass: 'badge-success' },
-    { id: 'prüfen' as const, label: 'Prüfen', activeClass: 'badge-warning' },
+    { id: 'eher akzeptieren' as const, label: 'Eher akzeptieren', activeClass: 'badge-info' },
+    { id: 'eher ablehnen' as const, label: 'Eher ablehnen', activeClass: 'badge-warning' },
     { id: 'ablehnen' as const, label: 'Ablehnen', activeClass: 'badge-error' }
   ];
+
+  const handleAccept = () => {
+    const payload = {
+      mitarbeiter: new_ma,
+      klient: new_client
+    };
+    console.log("handleAccept", payload);
+    onAccept(payload);
+  };
 </script>
 
 <div class="fixed inset-0 z-40 flex items-center justify-center">
@@ -160,7 +171,9 @@
               significantAssignments={assessment?.significant_assignments ?? []}
             />
           </div>
-        
+          <button class="btn btn-primary" onclick={() => onAccept({ mitarbeiter: new_ma, klient: new_client })}>
+            Zuordnung annehmen
+          </button>
       {:else}
         <div class="min-h-[200px] flex items-center justify-center text-base-content/70">
           Keine Statistikdaten vorhanden.
