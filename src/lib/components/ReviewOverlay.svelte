@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { DiffsResponse, FeldStatsValue } from '$lib/types';
 
-  const { onClose, new_ma, new_client } = $props<{
+  const { onClose, new_ma, new_client, ma_assignments, klient_assignments } = $props<{
     onClose: () => void;
     new_ma: string;
     new_client: string;
+    ma_assignments: string[];
+    klient_assignments: string[];
   }>();
 
   let diffs = $state<DiffsResponse[]>([]);
@@ -22,7 +24,9 @@
         },
         body: JSON.stringify({
           add_ma: new_ma,
-          add_client: new_client
+          add_client: new_client,
+          unavailable_mas: ma_assignments,
+          unavailable_clients: klient_assignments
         })
       });
       if (!res.ok) throw new Error('Diff-Anfrage fehlgeschlagen');
@@ -38,6 +42,8 @@
 
   $effect(() => {
     loadDiffs();
+    console.log("ma_assignments", ma_assignments);
+    console.log("klient_assignments", klient_assignments);
   });
 
   /** Human-readable label for stat keys */
@@ -60,10 +66,43 @@
     return labels[key] ?? key;
   }
 
-  /** Render a single stat value (number or nested object) */
-  function renderStatValue(value: FeldStatsValue): string | Record<string, number> {
-    if (typeof value === 'number') return String(value);
-    return value as Record<string, number>;
+  type ChangeItem = { label: string; from: number; to: number };
+
+  /** Compare vorher (entfernt) vs nachher (hinzugefügt), return all values (unchanged: same number, changed: from→to). */
+  function getChanges(
+    entfernt?: Record<string, FeldStatsValue>,
+    hinzugefügt?: Record<string, FeldStatsValue>
+  ): ChangeItem[] {
+    const items: ChangeItem[] = [];
+    const vorher = entfernt ?? {};
+    const nachher = hinzugefügt ?? {};
+    const keys = new Set([...Object.keys(vorher), ...Object.keys(nachher)]);
+
+    for (const k of keys) {
+      const vV = vorher[k];
+      const vN = nachher[k];
+      if (typeof vV === 'number' && typeof vN === 'number') {
+        items.push({ label: label(k), from: vV, to: vN });
+      } else if (typeof vV === 'object' && vV !== null && typeof vN === 'object' && vN !== null) {
+        const subV = vV as Record<string, number>;
+        const subN = vN as Record<string, number>;
+        const subKeys = new Set([...Object.keys(subV), ...Object.keys(subN)]);
+        for (const sk of subKeys) {
+          items.push({
+            label: `${label(k)}: ${label(sk)}`,
+            from: subV[sk] ?? 0,
+            to: subN[sk] ?? 0
+          });
+        }
+      } else {
+        items.push({
+          label: label(k),
+          from: typeof vV === 'number' ? vV : 0,
+          to: typeof vN === 'number' ? vN : 0
+        });
+      }
+    }
+    return items;
   }
 
   const stats = $derived(diffs[0]?.stats);
@@ -115,65 +154,32 @@
           </div>
         </div>
 
-        <!-- Felder: Änderungen pro Kriterium -->
+        <!-- Felder: nur geänderte Werte -->
         <h3 class="text-lg font-semibold mb-3">Änderungen nach Kriterium</h3>
-        <div class="space-y-4">
+        <div class="space-y-2">
           {#each Object.entries(stats.felder ?? {}) as [fieldName, fieldDiff] (fieldName)}
-            <div class="rounded-lg bg-base-200 p-4">
-              <div class="font-medium mb-3">{fieldName}</div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Vorher (links) -->
-                <div class="rounded-lg bg-error/10 border border-error/30 p-4">
-                  <div class="font-semibold text-error mb-2">Vorher</div>
-                  {#if fieldDiff.entfernt && Object.keys(fieldDiff.entfernt).length > 0}
-                    <ul class="space-y-1 text-sm">
-                      {#each Object.entries(fieldDiff.entfernt) as [k, v] (k)}
-                        {@const rendered = renderStatValue(v)}
-                        {#if typeof rendered === 'string'}
-                          <li><span class="opacity-80">{label(k)}:</span> <strong>{rendered}</strong></li>
-                        {:else}
-                          <li>
-                            <span class="opacity-80">{label(k)}:</span>
-                            <ul class="ml-3 mt-0.5">
-                              {#each Object.entries(rendered) as [sk, sv] (sk)}
-                                <li>{label(sk)}: <strong>{sv}</strong></li>
-                              {/each}
-                            </ul>
-                          </li>
-                        {/if}
-                      {/each}
-                    </ul>
-                  {:else}
-                    <p class="text-base-content/60 text-sm">—</p>
-                  {/if}
-                </div>
-                <!-- Nachher (rechts) -->
-                <div class="rounded-lg bg-success/10 border border-success/30 p-4">
-                  <div class="font-semibold text-success mb-2">Nachher</div>
-                  {#if fieldDiff.hinzugefügt && Object.keys(fieldDiff.hinzugefügt).length > 0}
-                    <ul class="space-y-1 text-sm">
-                      {#each Object.entries(fieldDiff.hinzugefügt) as [k, v] (k)}
-                        {@const rendered = renderStatValue(v)}
-                        {#if typeof rendered === 'string'}
-                          <li><span class="opacity-80">{label(k)}:</span> <strong>{rendered}</strong></li>
-                        {:else}
-                          <li>
-                            <span class="opacity-80">{label(k)}:</span>
-                            <ul class="ml-3 mt-0.5">
-                              {#each Object.entries(rendered) as [sk, sv] (sk)}
-                                <li>{label(sk)}: <strong>{sv}</strong></li>
-                              {/each}
-                            </ul>
-                          </li>
-                        {/if}
-                      {/each}
-                    </ul>
-                  {:else}
-                    <p class="text-base-content/60 text-sm">—</p>
-                  {/if}
-                </div>
+            {@const changes = getChanges(fieldDiff.entfernt, fieldDiff.hinzugefügt)}
+            {@const sorted = [...changes].sort((a, b) => (a.from === a.to ? 1 : 0) - (b.from === b.to ? 1 : 0))}
+            {#if sorted.length > 0}
+              <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg bg-base-200 px-3 py-2 text-sm">
+                <span class="font-medium shrink-0">{fieldName}</span>
+                <span class="flex flex-wrap gap-x-3 gap-y-0.5">
+                  {#each sorted as c (c.label)}
+                    <span class="text-base-content/90">
+                      {console.log("c.label", c.label)}
+                      <span class="opacity-80">{c.label.startsWith('Aufteilung: ') ? c.label.slice(12) : c.label}:</span>
+                      {#if c.from === c.to}
+                        <span>{c.to}</span>
+                      {:else}
+                        <span class="text-success">{c.from}</span>
+                        <span class="opacity-60">→</span>
+                        <span class="text-error">{c.to}</span>
+                      {/if}
+                    </span>
+                  {/each}
+                </span>
               </div>
-            </div>
+            {/if}
           {/each}
         </div>
       {:else}

@@ -2,8 +2,8 @@
   import { RecommendationFlow } from "$lib";
   import type { Recommendation } from "$lib/types";
 
-  const ma_assignments: string[] = $state([]);
-  const klient_assignments: string[] = $state([]);
+  let ma_assignments = $state<string[]>([]);
+  let klient_assignments = $state<string[]>([]);
 
   let recommendations = $state<Recommendation[]>([]);
   let loading = $state(false);
@@ -35,8 +35,8 @@
     {recommendations}
     onAssign={({ mitarbeiter, klient, index, isAlternative }) => {
       console.log("zugeordnet", { mitarbeiter, klient, index, isAlternative });
-      ma_assignments.push(mitarbeiter.id);
-      klient_assignments.push(klient.id);
+      ma_assignments = [...ma_assignments, mitarbeiter.id];
+      klient_assignments = [...klient_assignments, klient.id];
     }}
     onComplete={() => {
       console.log("alle Klienten wurden zugeordnet");

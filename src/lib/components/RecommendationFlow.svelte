@@ -1,7 +1,7 @@
 <script lang="ts">
-  import RecommendationCard from './RecommendationCard.svelte';
-  import ReviewOverlay from './ReviewOverlay.svelte';
-  import type { Klient, Mitarbeiter } from '$lib/types';
+  import RecommendationCard from "./RecommendationCard.svelte";
+  import ReviewOverlay from "./ReviewOverlay.svelte";
+  import type { Klient, Mitarbeiter } from "$lib/types";
 
   interface RecommendationEntry {
     mitarbeiter: Mitarbeiter;
@@ -38,9 +38,7 @@
   let assignedCount = $derived(ma_assignments.length);
   let isReviewOverlayOpen = $state(false);
 
-  const current = $derived(
-    remaining > 0 ? recommendations[0] : undefined
-  );
+  const current = $derived(remaining > 0 ? recommendations[0] : undefined);
 
   const advance = () => {
     const isLast = remaining === 0;
@@ -60,7 +58,7 @@
       mitarbeiter: Mitarbeiter;
       klient: Klient;
     },
-    isAlternative = false
+    isAlternative = false,
   ) => {
     onAssign?.({ ...payload, isAlternative });
     advance();
@@ -81,6 +79,11 @@
     // Auswahl eines alternativen Klienten ändert nur die Darstellung in der Karte.
     // Die endgültige Zuordnung erfolgt erst über "Zuordnung annehmen".
   };
+
+  $effect(() => {
+    console.log("ma_assignments", ma_assignments);
+    console.log("klient_assignments", klient_assignments);
+  });
 </script>
 
 {#if remaining === 0}
@@ -90,11 +93,17 @@
 {:else}
   <section class="space-y-4 w-3xl mx-auto">
     <header class="space-y-2">
-      <div class="flex items-center justify-between text-sm text-base-content/70">
+      <div
+        class="flex items-center justify-between text-sm text-base-content/70"
+      >
         <span>Zuordnungen abgeschlossen: {assignedCount} / {total}</span>
         <!-- <span>Verbleibend: {remaining}</span> -->
       </div>
-      <progress class="progress progress-primary w-full" value={assignedCount} max={total}></progress>
+      <progress
+        class="progress progress-primary w-full"
+        value={assignedCount}
+        max={total}
+      ></progress>
     </header>
     {#if loading}
       <div class="w-3xl mx-auto p-4 text-center text-base-content/70">
@@ -120,7 +129,12 @@
     {/if}
   </section>
   {#if isReviewOverlayOpen}
-    <ReviewOverlay onClose={closeReviewOverlay} new_ma={current.mitarbeiter.id} new_client={current.klient.id} />
+    <ReviewOverlay
+      onClose={closeReviewOverlay}
+      new_ma={current.mitarbeiter.id}
+      new_client={current.klient.id}
+      {ma_assignments}
+      {klient_assignments}
+    />
   {/if}
 {/if}
-
