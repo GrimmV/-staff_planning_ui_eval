@@ -2,6 +2,7 @@
   import RecommendationCard from "./RecommendationCard.svelte";
   import ReviewOverlay from "./ReviewOverlay.svelte";
   import type { Klient, Mitarbeiter } from "$lib/types";
+  import { klient } from "$lib/sampleData";
 
   interface RecommendationEntry {
     mitarbeiter: Mitarbeiter;
@@ -39,6 +40,8 @@
   let isReviewOverlayOpen = $state(false);
 
   const current = $derived(remaining > 0 ? recommendations[0] : undefined);
+  let active_client = $state<string | undefined>(current?.klient.id);
+  let active_mitarbeiter = $state<string | undefined>(current?.mitarbeiter.id);
 
   const advance = () => {
     const isLast = remaining === 0;
@@ -76,8 +79,8 @@
     mitarbeiter: Mitarbeiter;
     klient: Klient;
   }) => {
-    // Auswahl eines alternativen Klienten ändert nur die Darstellung in der Karte.
-    // Die endgültige Zuordnung erfolgt erst über "Zuordnung annehmen".
+    active_client = payload.klient.id;
+    active_mitarbeiter = payload.mitarbeiter.id;
   };
 
   $effect(() => {
@@ -131,8 +134,8 @@
   {#if isReviewOverlayOpen}
     <ReviewOverlay
       onClose={closeReviewOverlay}
-      new_ma={current.mitarbeiter.id}
-      new_client={current.klient.id}
+      new_ma={active_mitarbeiter ?? ""}
+      new_client={active_client ?? ""}
       {ma_assignments}
       {klient_assignments}
     />

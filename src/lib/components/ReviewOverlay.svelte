@@ -1,5 +1,7 @@
 <script lang="ts">
-  import type { DiffsResponse, FeldStatsValue } from '$lib/types';
+  import type { DiffsResponse } from '$lib/types';
+  import ReviewStats from './ReviewStats.svelte';
+  import ReviewAssignments from './ReviewAssignments.svelte';
 
   const { onClose, new_ma, new_client, ma_assignments, klient_assignments } = $props<{
     onClose: () => void;
@@ -30,7 +32,7 @@
         })
       });
       if (!res.ok) throw new Error('Diff-Anfrage fehlgeschlagen');
-      const data = await res.json();
+      const data = (await res.json()) as DiffsResponse[];
       diffs = Array.isArray(data) ? data : [data];
     } catch (e) {
       error = e instanceof Error ? e.message : 'Unbekannter Fehler';
@@ -42,8 +44,6 @@
 
   $effect(() => {
     loadDiffs();
-    console.log("ma_assignments", ma_assignments);
-    console.log("klient_assignments", klient_assignments);
   });
 
   /** Human-readable label for stat keys */
@@ -66,46 +66,14 @@
     return labels[key] ?? key;
   }
 
-  type ChangeItem = { label: string; from: number; to: number };
-
-  /** Compare vorher (entfernt) vs nachher (hinzugefügt), return all values (unchanged: same number, changed: from→to). */
-  function getChanges(
-    entfernt?: Record<string, FeldStatsValue>,
-    hinzugefügt?: Record<string, FeldStatsValue>
-  ): ChangeItem[] {
-    const items: ChangeItem[] = [];
-    const vorher = entfernt ?? {};
-    const nachher = hinzugefügt ?? {};
-    const keys = new Set([...Object.keys(vorher), ...Object.keys(nachher)]);
-
-    for (const k of keys) {
-      const vV = vorher[k];
-      const vN = nachher[k];
-      if (typeof vV === 'number' && typeof vN === 'number') {
-        items.push({ label: label(k), from: vV, to: vN });
-      } else if (typeof vV === 'object' && vV !== null && typeof vN === 'object' && vN !== null) {
-        const subV = vV as Record<string, number>;
-        const subN = vN as Record<string, number>;
-        const subKeys = new Set([...Object.keys(subV), ...Object.keys(subN)]);
-        for (const sk of subKeys) {
-          items.push({
-            label: `${label(k)}: ${label(sk)}`,
-            from: subV[sk] ?? 0,
-            to: subN[sk] ?? 0
-          });
-        }
-      } else {
-        items.push({
-          label: label(k),
-          from: typeof vV === 'number' ? vV : 0,
-          to: typeof vN === 'number' ? vN : 0
-        });
-      }
-    }
-    return items;
-  }
-
   const stats = $derived(diffs[0]?.stats);
+  const assessment = $derived(diffs[0]?.assessment);
+
+  const scoreOptions = [
+    { id: 'akzeptieren' as const, label: 'Akzeptieren', activeClass: 'badge-success' },
+    { id: 'prüfen' as const, label: 'Prüfen', activeClass: 'badge-warning' },
+    { id: 'ablehnen' as const, label: 'Ablehnen', activeClass: 'badge-error' }
+  ];
 </script>
 
 <div class="fixed inset-0 z-40 flex items-center justify-center">
@@ -136,12 +104,12 @@
         <div class="stats stats-vertical sm:stats-horizontal shadow w-full mb-8">
           <div class="stat">
             <div class="stat-title">Vorher</div>
-            <div class="stat-value text-primary">{stats.anzahl.alt}</div>
+            <div class="stat-value text-primary">{stats.anzahl.gesamt_vorher}</div>
             <div class="stat-desc">Zuordnungen</div>
           </div>
           <div class="stat">
             <div class="stat-title">Nachher</div>
-            <div class="stat-value">{stats.anzahl.neu}</div>
+            <div class="stat-value">{stats.anzahl.gesamt_nachher}</div>
             <div class="stat-desc">Zuordnungen</div>
           </div>
           <div class="stat">
@@ -153,35 +121,46 @@
             <div class="stat-desc">neu</div>
           </div>
         </div>
+        <h3 class="text-2xl font-bold text-base-content">Automatische Bewertung</h3>
+        <!-- Bewertung -->
+        {#if assessment}
+          <div class="mb-6 space-y-4">
+            <div class="flex items-center gap-2 flex-wrap">
+              {#each scoreOptions as opt (opt.id)}
+                <span
+                  class="badge {assessment.score === opt.id ? opt.activeClass : 'badge-ghost'}"
+                >
+                  {opt.label}
+                </span>
+              {/each}
+            </div>
+            <div
+              class="collapse collapse-arrow bg-base-200 border border-base-300 rounded-lg overflow-hidden"
+            >
+              <input type="checkbox" />
+              <div class="collapse-title min-h-0 py-4 font-medium">
+                {assessment.short_assessment}
+              </div>
+              <div class="collapse-content">
+                <p class="pt-2 text-base-content/90">{assessment.assessment}</p>
+              </div>
+            </div>
+          </div>
+        {/if}
 
         <!-- Felder: nur geänderte Werte -->
-        <h3 class="text-lg font-semibold mb-3">Änderungen nach Kriterium</h3>
-        <div class="space-y-2">
-          {#each Object.entries(stats.felder ?? {}) as [fieldName, fieldDiff] (fieldName)}
-            {@const changes = getChanges(fieldDiff.entfernt, fieldDiff.hinzugefügt)}
-            {@const sorted = [...changes].sort((a, b) => (a.from === a.to ? 1 : 0) - (b.from === b.to ? 1 : 0))}
-            {#if sorted.length > 0}
-              <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg bg-base-200 px-3 py-2 text-sm">
-                <span class="font-medium shrink-0">{fieldName}</span>
-                <span class="flex flex-wrap gap-x-3 gap-y-0.5">
-                  {#each sorted as c (c.label)}
-                    <span class="text-base-content/90">
-                      {console.log("c.label", c.label)}
-                      <span class="opacity-80">{c.label.startsWith('Aufteilung: ') ? c.label.slice(12) : c.label}:</span>
-                      {#if c.from === c.to}
-                        <span>{c.to}</span>
-                      {:else}
-                        <span class="text-success">{c.from}</span>
-                        <span class="opacity-60">→</span>
-                        <span class="text-error">{c.to}</span>
-                      {/if}
-                    </span>
-                  {/each}
-                </span>
-              </div>
-            {/if}
-          {/each}
-        </div>
+        <ReviewStats {stats} />
+
+        <!-- Zuordnungstabellen Vorher/Nachher -->
+        
+          <div class="mt-8 pt-6 border-t border-base-300">
+            <ReviewAssignments
+              vorher={diffs[0].vorher}
+              nachher={diffs[0].nachher}
+              significantAssignments={assessment?.significant_assignments ?? []}
+            />
+          </div>
+        
       {:else}
         <div class="min-h-[200px] flex items-center justify-center text-base-content/70">
           Keine Statistikdaten vorhanden.

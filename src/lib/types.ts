@@ -49,8 +49,8 @@ export interface FeldDiff {
 }
 
 export interface DiffAnzahl {
-  alt: number;
-  neu: number;
+  gesamt_vorher: number;
+  gesamt_nachher: number;
   hinzugefügt: number;
   entfernt: number;
 }
@@ -60,8 +60,21 @@ export interface DiffStats {
   anzahl: DiffAnzahl;
 }
 
+export interface SignificantAssignment {
+  ma: string;
+  spalten_namen: string[];
+}
+
+export interface Assessment {
+  score: "akzeptiere" | "prüfen" | "ablehnen";
+  assessment: string;
+  short_assessment: string;
+  significant_assignments: SignificantAssignment[];
+}
+
 export interface DiffsResponse {
-  hinzugefügt: object[];
-  entfernt: object[];
+  nachher: object[];
+  vorher: object[];
   stats: DiffStats;
+  assessment: Assessment;
 }
