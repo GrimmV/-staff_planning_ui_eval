@@ -16,7 +16,7 @@
     onComplete,
     ma_assignments = [],
     klient_assignments = [],
-    loading = false,
+    loading = true,
     error = null,
   } = $props<{
     recommendations: RecommendationEntry[];
@@ -71,9 +71,17 @@
   };
 </script>
 
-{#if remaining === 0}
+{#if remaining === 0 && !loading && !error}
   <div class="w-3xl mx-auto p-4 text-center text-base-content/70">
     Keine Empfehlungen vorhanden.
+  </div>
+{:else if loading}
+  <div class="w-3xl mx-auto p-4 text-center text-base-content/70">
+    <span>Lade Empfehlungen...</span>
+  </div>
+{:else if error}
+  <div class="w-3xl mx-auto p-4 text-center text-base-content/70">
+    <span>Fehler beim Laden der Empfehlungen: {error}</span>
   </div>
 {:else}
   <section class="space-y-4 w-3xl mx-auto">

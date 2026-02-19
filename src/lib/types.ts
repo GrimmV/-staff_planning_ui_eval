@@ -41,7 +41,7 @@ export interface Recommendation {
 }
 
 /** Stats for a single field: added vs removed (e.g. min/max/durchschnitt or counts) */
-export type FeldStatsValue = number | { [key: string]: number | FeldStatsValue };
+export type FeldStatsValue = number | string | { [key: string]: number | string | FeldStatsValue };
 
 export interface FeldDiff {
   hinzugefügt?: Record<string, FeldStatsValue>;
@@ -60,16 +60,35 @@ export interface DiffStats {
   anzahl: DiffAnzahl;
 }
 
+export interface RelevantChange {
+  relevant_spalte: string;
+  änderung: string;
+  effect: "positiv" | "negativ" | "neutral";
+}
+
 export interface SignificantAssignment {
   ma: string;
-  spalten_namen: string[];
+  relevant_changes: RelevantChange[];
+  effect: "positiv" | "negativ" | "neutral";
+}
+
+export interface StatisticsChange {
+  relevant_feature: string;
+  änderung: string;
+  effect: "positiv" | "negativ" | "neutral";
+}
+
+export interface StatisticsSummary {
+  relevant_changes: StatisticsChange[];
+  effect: "positiv" | "negativ" | "neutral";
 }
 
 export interface Assessment {
   score: "akzeptieren" | "eher akzeptieren" | "eher ablehnen" | "ablehnen";
   assessment: string;
   short_assessment: string;
-  significant_assignments: SignificantAssignment[];
+  änderungen: SignificantAssignment[];
+  statistiken: StatisticsSummary;
 }
 
 export interface DiffsResponse {

@@ -119,7 +119,7 @@
     <!-- Header: Mitarbeiter & Klient side by side -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Mitarbeiter -->
-      <section class="space-y-2 h-48 overflow-y-auto">
+      <section class="space-y-2 ">
         <h2
           class="text-sm font-semibold uppercase tracking-wide text-base-content/60"
         >
