@@ -6,10 +6,11 @@
   let klient_assignments = $state<string[]>([]);
 
   let recommendations = $state<Recommendation[]>([]);
-  let loading = $state(true);
+  let loading = $state(false);
   let error = $state<string | null>(null);
 
   async function loadRecommendations() {
+    loading = true;
     error = null;
     const res = await fetch('/api/recommendations', {
       method: 'POST',
