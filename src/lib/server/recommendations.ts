@@ -1,6 +1,10 @@
 import type { Recommendation } from '$lib/types';
+import { PUBLIC_BASE_URL as BASE_URL, PUBLIC_PORT as PORT } from "$env/static/public";
 
-const RECOMMENDATIONS_URL = 'http://localhost:5000/recommendations';
+
+const RECOMMENDATIONS_URL = BASE_URL + PORT + '/recommendations';
+
+console.log("RECOMMENDATIONS_URL", RECOMMENDATIONS_URL);
 
 export interface RecommendationRequestBody {
   unavailable_mas?: string[];

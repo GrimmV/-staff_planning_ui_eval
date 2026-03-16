@@ -1,6 +1,8 @@
 import type { DiffsResponse } from '$lib/types';
+import { PUBLIC_BASE_URL as BASE_URL, PUBLIC_PORT as PORT } from "$env/static/public";
+const DIFFS_URL = BASE_URL + PORT + '/retrieve_diff';
 
-const DIFFS_URL = 'http://localhost:5000/retrieve_diff';
+console.log("DIFFS_URL", DIFFS_URL);
 
 export interface DiffsRequestBody {
   add_client?: string;
