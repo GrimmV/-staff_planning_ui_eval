@@ -3,11 +3,9 @@
     FeldStatsValue,
     FeldDiff,
     DiffStats,
-    StatisticsSummary,
   } from "$lib/types";
-  const { stats, summary } = $props<{
+  const { stats } = $props<{
     stats: DiffStats;
-    summary: StatisticsSummary;
   }>();
 
   export type ChangeItem = {
@@ -15,8 +13,6 @@
     from: number | string;
     to: number | string;
   };
-
-  let showSummary = $state(true);
 
   function toDisplayValue(v: FeldStatsValue | undefined): number | string {
     if (typeof v === "number" || typeof v === "string") return v;
@@ -73,61 +69,11 @@
 </script>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between gap-4 flex-wrap">
-    <h3 class="text-lg font-semibold text-base-content">
-      Statistische Veränderungen
-    </h3>
-    <div class="join">
-      <button
-        type="button"
-        class="join-item btn btn-sm {showSummary ? 'btn-active' : 'btn-ghost'}"
-        onclick={() => (showSummary = true)}
-      >
-        Zusammenfassung
-      </button>
-      <button
-        type="button"
-        class="join-item btn btn-sm {!showSummary ? 'btn-active' : 'btn-ghost'}"
-        onclick={() => (showSummary = false)}
-      >
-        Details
-      </button>
-    </div>
-  </div>
+  <h3 class="text-lg font-semibold text-base-content">
+    Statistische Veränderungen
+  </h3>
 
-  {#if showSummary}
-    <!-- StatisticsSummary view -->
-    <div class="space-y-3">
-      {#if summary?.relevant_changes?.length}
-        <div class="rounded-lg p-3">
-          <ul class="space-y-2">
-            {#each summary.relevant_changes as rc (rc.relevant_feature + rc.änderung)}
-              {#if rc.effect !== "neutral"}
-                {@const rcEffectBg =
-                  rc.effect === "positiv"
-                    ? "bg-success/25 border-success/50"
-                    : rc.effect === "negativ"
-                      ? "bg-error/25 border-error/50"
-                      : "bg-base-content/10 border-base-content/20"}
-                <li class="flex flex-wrap items-baseline gap-2 text-sm">
-                  <span class="badge badge-xs border {rcEffectBg} font-normal"
-                    >{rc.relevant_feature}</span
-                  >
-                  <span class="text-base-content">{rc.änderung}</span>
-                </li>
-              {/if}
-            {/each}
-          </ul>
-        </div>
-      {:else}
-        <p class="text-base-content/60 text-sm">
-          Keine Zusammenfassung verfügbar.
-        </p>
-      {/if}
-    </div>
-  {:else}
-    <!-- Raw statistics overview -->
-    <div class="space-y-2">
+  <div class="space-y-2">
       {#each Object.entries(stats.felder ?? {}) as [fieldName, fieldDiff] (fieldName)}
         {@const diff = fieldDiff as FeldDiff}
         {@const changes = getChanges(diff.entfernt, diff.hinzugefügt)}
@@ -162,6 +108,5 @@
           </div>
         {/if}
       {/each}
-    </div>
-  {/if}
+  </div>
 </div>

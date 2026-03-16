@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { DiffsResponse } from "$lib/types";
   import ReviewStats from "./ReviewStats.svelte";
+  import ReviewStatsNoLLM from "./ReviewStatsNoLLM.svelte";
   import ReviewAssignments from "./ReviewAssignments.svelte";
+  import ReviewAssignmentsNoLLM from "./ReviewAssignmentsNoLLM.svelte";
   import Assessment from "./Assessment.svelte";
   const {
     onClose,
@@ -10,6 +12,7 @@
     ma_assignments,
     klient_assignments,
     onAccept,
+    useLLM,
   } = $props<{
     onClose: () => void;
     new_ma: string;
@@ -17,6 +20,7 @@
     ma_assignments: string[];
     klient_assignments: string[];
     onAccept: (payload: { mitarbeiter: string; klient: string }) => void;
+    useLLM: boolean;
   }>();
 
   let diffs = $state<DiffsResponse[]>([]);
@@ -143,7 +147,7 @@
           </div>
         </div>
         <!-- Bewertung -->
-        {#if assessment}
+        {#if assessment && useLLM}
           <Assessment {assessment} />
         {/if}
 
@@ -174,22 +178,47 @@
           </span>
         </div>
 
-        <!-- Felder: nur geänderte Werte -->
-        <ReviewStats {stats} summary={assessment?.statistiken} />
+        {#if useLLM}
+          <!-- Felder: nur geänderte Werte -->
+          <div
+            class="collapse collapse-arrow bg-base-200 my-4 border border-base-300 rounded-lg"
+          >
+            <input type="checkbox" checked={false} />
+            <div class="collapse-title font-semibold min-h-0 py-3">
+              Statistik &amp; Änderungen
+            </div>
+            <div class="collapse-content">
+              <ReviewStats {stats} summary={assessment?.statistiken} />
+            </div>
+          </div>
+        {:else}
+          <ReviewStatsNoLLM {stats} />
+        {/if}
 
+        {#if useLLM}
         <!-- Zuordnungstabellen Vorher/Nachher -->
-
-        <div class="mt-8 pt-6 border-t border-base-300">
-          <ReviewAssignments
+        <div
+          class="collapse collapse-arrow bg-base-200 my-4 border border-base-300 rounded-lg"
+        >
+          <input type="checkbox" checked={false} />
+          <div class="collapse-title font-semibold min-h-0 py-3">
+            Zuordnungen Vorher/Nachher
+          </div>
+          <div class="collapse-content">
+            <ReviewAssignments
+              vorher={diffs[0].vorher}
+              nachher={diffs[0].nachher}
+              änderungen={assessment?.änderungen}
+            />
+          </div>
+        </div>
+        {:else}
+          <ReviewAssignmentsNoLLM
             vorher={diffs[0].vorher}
             nachher={diffs[0].nachher}
-            änderungen={assessment?.änderungen}
           />
-        </div>
-        <button
-          class="btn btn-primary"
-          onclick={handleAccept}
-        >
+        {/if}
+        <button class="btn btn-primary" onclick={handleAccept}>
           Zuordnung annehmen
         </button>
       {:else}

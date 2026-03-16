@@ -18,6 +18,7 @@
     klient_assignments = [],
     loading = true,
     error = null,
+    useLLM = false,
   } = $props<{
     recommendations: RecommendationEntry[];
     onAssign?: (payload: { mitarbeiter: string; klient: string }) => void;
@@ -26,6 +27,7 @@
     klient_assignments?: string[];
     loading?: boolean;
     error?: string | null;
+    useLLM?: boolean;
   }>();
 
   const remaining = $derived(recommendations.length);
@@ -129,6 +131,7 @@
       onAccept={handleAccept}
       {ma_assignments}
       {klient_assignments}
+      {useLLM}
     />
   {/if}
 {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { Assessment } from "$lib/types";
+  import type { Assessment, SignificantAssignment, RelevantChange, StatisticsChange } from "$lib/types";
+  import ChatButton from "./ChatButton.svelte";
   const { assessment } = $props<{ assessment: Assessment }>();
 
   let showLong = $state(false);
@@ -24,7 +25,6 @@
   ];
 </script>
 
-
 <h3 class="text-lg font-semibold text-base-content">KI Assistenz</h3>
 
 <div class="mb-6 space-y-4">
@@ -41,7 +41,10 @@
     {/each}
   </div>
 
-  <div class="flex items-center justify-end gap-4 flex-wrap">
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-2">
+      <ChatButton context={"Bewertung: " + assessment.score + "\n\n" + "Erklärung: " + assessment.assessment + "\n\n" + "Änderungen: " + assessment.änderungen.map((a: SignificantAssignment) => a.relevant_changes.map((c: RelevantChange) => c.relevant_spalte + ": " + c.änderung).join(", ")).join(", ") + "\n\n" + "Statistiken: " + assessment.statistiken.relevant_changes.map((c: StatisticsChange) => c.relevant_feature + ": " + c.änderung).join(", ")} />
+    </div>
     <div class="join">
       <button
         type="button"
