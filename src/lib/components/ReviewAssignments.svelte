@@ -54,7 +54,7 @@
   const vorherParsed = $derived(parseMarkdownTable(toMarkdownString(vorher)));
   const nachherParsed = $derived(parseMarkdownTable(toMarkdownString(nachher)));
 
-  let showTables = $state(false);
+  let showTables = $state(true);
 </script>
 
 <div class="space-y-8">

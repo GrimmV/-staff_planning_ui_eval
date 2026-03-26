@@ -177,23 +177,24 @@
             Neutraler Effekt
           </span>
         </div>
-
+        
         {#if useLLM}
-          <!-- Felder: nur geänderte Werte -->
-          <div
-            class="collapse collapse-arrow bg-base-200 my-4 border border-base-300 rounded-lg"
-          >
-            <input type="checkbox" checked={false} />
-            <div class="collapse-title font-semibold min-h-0 py-3">
-              Statistik &amp; Änderungen
-            </div>
-            <div class="collapse-content">
-              <ReviewStats {stats} summary={assessment?.statistiken} />
-            </div>
+        <!-- Felder: nur geänderte Werte -->
+        <div
+          class="collapse collapse-arrow bg-base-200 my-4 border border-base-300 rounded-lg"
+        >
+          <input type="checkbox" checked={false} />
+          <div class="collapse-title font-semibold min-h-0 py-3">
+            Statistik &amp; Änderungen
           </div>
+          <div class="collapse-content">
+            <ReviewStats {stats} summary={assessment?.statistiken} />
+          </div>
+        </div>
         {:else}
           <ReviewStatsNoLLM {stats} />
         {/if}
+
 
         {#if useLLM}
         <!-- Zuordnungstabellen Vorher/Nachher -->

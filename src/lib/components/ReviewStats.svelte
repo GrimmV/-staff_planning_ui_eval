@@ -16,7 +16,7 @@
     to: number | string;
   };
 
-  let showSummary = $state(true);
+  let showSummary = $state(false);
 
   function toDisplayValue(v: FeldStatsValue | undefined): number | string {
     if (typeof v === "number" || typeof v === "string") return v;
