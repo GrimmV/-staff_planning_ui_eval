@@ -50,9 +50,5 @@
 
 <div class="space-y-4">
   <h3 class="text-lg font-semibold text-base-content">Zuordnungen</h3>
-  <AssignmentTables
-    vorherParsed={vorherParsed}
-    nachherParsed={nachherParsed}
-    änderungen={[]}
-  />
+  <AssignmentTables vorherParsed={vorherParsed} nachherParsed={nachherParsed} />
 </div>

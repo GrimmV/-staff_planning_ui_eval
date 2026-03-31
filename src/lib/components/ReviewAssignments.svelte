@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SignificantAssignment } from "$lib/types";
   import AssignmentTables from "./AssignmentTables.svelte";
+  import AssignmentTablesSummary from "./AssignmentTablesSummary.svelte";
   const {
     nachher,
     vorher,
@@ -79,57 +80,16 @@
   </div>
 
   {#if showTables}
-    <AssignmentTables
-      vorherParsed={vorherParsed}
-      nachherParsed={nachherParsed}
-      änderungen={änderungen ?? []}
-    />
+    <AssignmentTables vorherParsed={vorherParsed} nachherParsed={nachherParsed} />
   {:else}
     <!-- Summary view -->
     <div class="space-y-3">
       <h3 class="text-base font-medium flex items-center gap-2">Übersicht</h3>
       {#if änderungen?.length}
-        <div class="grid grid-cols-2 gap-3">
-          {#each änderungen as veränderung (veränderung.ma)}
-            {@const effectBg =
-              veränderung.effect === "positiv"
-                ? "bg-success/25 border-success/50"
-                : veränderung.effect === "negativ"
-                  ? "bg-error/25 border-error/50"
-                  : "bg-base-content/10 border-base-content/20"}
-            <div class="card card-bordered overflow-hidden border {effectBg}">
-              <div class="card-body py-3 px-4">
-                <div class="flex items-start gap-3">
-                  <span class="badge badge-sm shrink-0 border {effectBg}">
-                    {veränderung.ma}
-                  </span>
-                  <div class="min-w-0 flex-1 space-y-2">
-                    {#if veränderung.relevant_changes?.length}
-                      <ul class="space-y-1.5 text-sm">
-                        {#each veränderung.relevant_changes as rc, i (rc.relevant_spalte + "-" + i)}
-                          {@const rcEffectBg =
-                            rc.effect === "positiv"
-                              ? "bg-success/25 border border-success/50"
-                              : rc.effect === "negativ"
-                                ? "bg-error/25 border border-error/50"
-                                : "bg-base-content/10 border border-base-content/20"}
-                          <li class="flex flex-wrap items-baseline gap-2">
-                            <span
-                              class="badge badge-xs border {rcEffectBg} font-normal"
-                            >
-                              {rc.relevant_spalte}
-                            </span>
-                            <span class="text-base-content">{rc.änderung}</span>
-                          </li>
-                        {/each}
-                      </ul>
-                    {/if}
-                  </div>
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
+        <AssignmentTablesSummary
+          änderungen={änderungen}
+          nachherParsed={nachherParsed}
+        />
       {:else}
         <p class="text-base-content/60 text-sm">Keine Änderungen.</p>
       {/if}

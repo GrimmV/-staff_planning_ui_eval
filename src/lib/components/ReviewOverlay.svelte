@@ -95,7 +95,7 @@
   <div class="absolute inset-0 bg-base-300/70 backdrop-blur-sm"></div>
 
   <div
-    class="relative z-50 w-full max-w-5xl mx-4 max-h-[90vh] rounded-xl bg-base-100 shadow-2xl border border-base-300 flex flex-col"
+    class="relative z-50 w-full max-w-6xl mx-4 max-h-[90vh] rounded-xl bg-base-100 shadow-2xl border border-base-300 flex flex-col"
   >
     <button
       type="button"
