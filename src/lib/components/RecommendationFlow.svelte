@@ -1,8 +1,8 @@
 <script lang="ts">
+  import AssignmentsPopover from "./AssignmentsPopover.svelte";
   import RecommendationCard from "./RecommendationCard.svelte";
   import ReviewOverlay from "./ReviewOverlay.svelte";
   import type { Klient, Mitarbeiter } from "$lib/types";
-  import { klient } from "$lib/sampleData";
 
   interface RecommendationEntry {
     mitarbeiter: Mitarbeiter;
@@ -30,15 +30,64 @@
     useLLM?: boolean;
   }>();
 
+  /** Lower number = earlier in queue; Hoch first. */
+  function prioritySortKey(p?: Klient["prioritaet"]): number {
+    if (!p) return 99;
+    const n = String(p).toLowerCase();
+    if (n === "hoch") return 0;
+    if (n === "mittel") return 1;
+    if (n === "niedrig") return 2;
+    return 50;
+  }
+
+  const orderedRecommendations = $derived(
+    [...recommendations].sort(
+      (a, b) =>
+        prioritySortKey(a.klient.prioritaet) -
+        prioritySortKey(b.klient.prioritaet),
+    ),
+  );
+
   const remaining = $derived(recommendations.length);
   const total = $derived(recommendations.length + klient_assignments.length);
 
   let assignedCount = $derived(ma_assignments.length);
   let isReviewOverlayOpen = $state(false);
 
-  const current = $derived(remaining > 0 ? recommendations[0] : undefined);
-  let active_client = $state<string | undefined>(current?.klient.id);
-  let active_mitarbeiter = $state<string | undefined>(current?.mitarbeiter.id);
+  /** Labels for completed pairs (IDs from parent; names and Klient-Prio captured on assign). */
+  let completedLabels = $state<
+    { maName: string; klientName: string; klientPrioritaet?: Klient["prioritaet"] }[]
+  >([]);
+
+  const current = $derived(
+    remaining > 0 ? orderedRecommendations[0] : undefined,
+  );
+
+  /** Stable identity for the top-of-queue recommendation (survives refetch with new object refs). */
+  const currentTopKey = $derived(
+    current
+      ? `${current.mitarbeiter.id}:${current.klient.id}`
+      : undefined,
+  );
+
+  let active_client = $state<string | undefined>(undefined);
+  let active_mitarbeiter = $state<string | undefined>(undefined);
+  let syncedTopKey = $state<string | undefined>(undefined);
+
+  $effect(() => {
+    const c = current;
+    const key = currentTopKey;
+    if (!c || !key) {
+      active_client = undefined;
+      active_mitarbeiter = undefined;
+      syncedTopKey = undefined;
+      return;
+    }
+    if (key === syncedTopKey) return;
+    syncedTopKey = key;
+    active_mitarbeiter = c.mitarbeiter.id;
+    active_client = c.klient.id;
+  });
 
   const advance = () => {
     const isLast = remaining === 0;
@@ -54,6 +103,17 @@
   };
 
   const handleAssign = (payload: { mitarbeiter: string; klient: string }) => {
+    const c = current;
+    if (c) {
+      const { maName, klientName, klientPrioritaet } = resolveNamesFromCurrent(
+        c,
+        payload,
+      );
+      completedLabels = [
+        ...completedLabels,
+        { maName, klientName, klientPrioritaet },
+      ];
+    }
     onAssign?.({ ...payload });
     advance();
   };
@@ -71,6 +131,40 @@
     active_client = payload.klient;
     active_mitarbeiter = payload.mitarbeiter;
   };
+
+  $effect(() => {
+    const n = ma_assignments.length;
+    if (completedLabels.length > n) {
+      completedLabels = completedLabels.slice(0, n);
+    }
+  });
+
+  function resolveNamesFromCurrent(
+    c: RecommendationEntry,
+    payload: { mitarbeiter: string; klient: string },
+  ): {
+    maName: string;
+    klientName: string;
+    klientPrioritaet?: Klient["prioritaet"];
+  } {
+    const maName =
+      c.mitarbeiter.id === payload.mitarbeiter
+        ? c.mitarbeiter.name
+        : payload.mitarbeiter;
+    if (c.klient.id === payload.klient) {
+      return {
+        maName,
+        klientName: c.klient.name,
+        klientPrioritaet: c.klient.prioritaet,
+      };
+    }
+    const alt = c.alternativeKlienten?.find((k) => k.id === payload.klient);
+    return {
+      maName,
+      klientName: alt?.name ?? payload.klient,
+      klientPrioritaet: alt?.prioritaet,
+    };
+  }
 </script>
 
 {#if remaining === 0 && !loading && !error}
@@ -89,10 +183,16 @@
   <section class="space-y-4 w-3xl mx-auto">
     <header class="space-y-2">
       <div
-        class="flex items-center justify-between text-sm text-base-content/70"
+        class="flex items-center justify-between gap-2 text-sm text-base-content/70"
       >
         <span>Zuordnungen abgeschlossen: {assignedCount} / {total}</span>
-        <!-- <span>Verbleibend: {remaining}</span> -->
+        <AssignmentsPopover
+          {ma_assignments}
+          {klient_assignments}
+          {completedLabels}
+          recommendations={orderedRecommendations}
+          {current}
+        />
       </div>
       <progress
         class="progress progress-primary w-full"
