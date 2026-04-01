@@ -55,8 +55,18 @@ export interface DiffAnzahl {
   entfernt: number;
 }
 
+/** Field-level diffs inside each priority block. */
+export type FelderDiffMap = Record<string, FeldDiff>;
+
+/** Per Klient priority: field statistics under `felder`. */
+export interface PriorityStatsBlock {
+  felder: FelderDiffMap;
+}
+
 export interface DiffStats {
-  felder: Record<string, FeldDiff>;
+  hoch?: PriorityStatsBlock;
+  mittel?: PriorityStatsBlock;
+  niedrig?: PriorityStatsBlock;
   anzahl: DiffAnzahl;
 }
 
@@ -84,9 +94,10 @@ export interface StatisticsSummary {
 }
 
 export interface Assessment {
-  score: "akzeptieren" | "eher akzeptieren" | "eher ablehnen" | "ablehnen";
-  assessment: string;
-  short_assessment: string;
+  score: "eher akzeptieren" | "eher ablehnen" | "ablehnen";
+  general_assessment: string;
+  detail_level_1_assessment: string;
+  detail_level_2_assessment: string;
   änderungen: SignificantAssignment[];
   statistiken: StatisticsSummary;
 }

@@ -3,8 +3,16 @@
     FeldStatsValue,
     FeldDiff,
     DiffStats,
+    FelderDiffMap,
     StatisticsSummary,
   } from "$lib/types";
+  import {
+    felderMapWithoutKlientenPrioritaet,
+    isKlientenPrioritaetFieldName,
+    klientenCountFromFelderMap,
+    PRIORITAET_KEINE_AENDERUNGEN_MSG,
+    sectionTitleWithKlientenCount,
+  } from "$lib/utils/reviewStatsDisplay";
   const { stats, summary } = $props<{
     stats: DiffStats;
     summary: StatisticsSummary;
@@ -17,6 +25,9 @@
   };
 
   let showSummary = $state(false);
+
+  /** DaisyUI collapse: Priorität hoch open by default; mittel/niedrig closed. */
+  let priorityCollapseOpen = $state<boolean[]>([true, false, false]);
 
   function toDisplayValue(v: FeldStatsValue | undefined): number | string {
     if (typeof v === "number" || typeof v === "string") return v;
@@ -70,98 +81,111 @@
   function label(key: string): string {
     return key;
   }
+
+  const PRIORITY_SECTIONS = [
+    { key: "hoch" as const, title: "Priorität hoch" },
+    { key: "mittel" as const, title: "Priorität mittel" },
+    { key: "niedrig" as const, title: "Priorität niedrig" },
+  ];
+
+  function felderMapForPriority(
+    s: DiffStats,
+    key: (typeof PRIORITY_SECTIONS)[number]["key"],
+  ): FelderDiffMap {
+    return s[key]?.felder ?? {};
+  }
+
+  function felderMapHasVisibleChanges(felderMap: FelderDiffMap): boolean {
+    const visible = felderMapWithoutKlientenPrioritaet(felderMap);
+    for (const fieldDiff of Object.values(visible)) {
+      const d = fieldDiff as FeldDiff;
+      if (getChanges(d.entfernt, d.hinzugefügt).length > 0) return true;
+    }
+    return false;
+  }
 </script>
 
-<div class="space-y-4">
-  <div class="flex items-center justify-between gap-4 flex-wrap">
-    <h3 class="text-lg font-semibold text-base-content">
-      Statistische Veränderungen
-    </h3>
-    <div class="join">
-      <button
-        type="button"
-        class="join-item btn btn-sm {showSummary ? 'btn-active' : 'btn-ghost'}"
-        onclick={() => (showSummary = true)}
-      >
-        Zusammenfassung
-      </button>
-      <button
-        type="button"
-        class="join-item btn btn-sm {!showSummary ? 'btn-active' : 'btn-ghost'}"
-        onclick={() => (showSummary = false)}
-      >
-        Details
-      </button>
-    </div>
-  </div>
-
-  {#if showSummary}
-    <!-- StatisticsSummary view -->
-    <div class="space-y-3">
-      {#if summary?.relevant_changes?.length}
-        <div class="rounded-lg p-3">
-          <ul class="space-y-2">
-            {#each summary.relevant_changes as rc (rc.relevant_feature + rc.änderung)}
-              {#if rc.effect !== "neutral"}
-                {@const rcEffectBg =
-                  rc.effect === "positiv"
-                    ? "bg-success/25 border-success/50"
-                    : rc.effect === "negativ"
-                      ? "bg-error/25 border-error/50"
-                      : "bg-base-content/10 border-base-content/20"}
-                <li class="flex flex-wrap items-baseline gap-2 text-sm">
-                  <span class="badge badge-xs border {rcEffectBg} font-normal"
-                    >{rc.relevant_feature}</span
-                  >
-                  <span class="text-base-content">{rc.änderung}</span>
-                </li>
-              {/if}
-            {/each}
-          </ul>
-        </div>
-      {:else}
-        <p class="text-base-content/60 text-sm">
-          Keine Zusammenfassung verfügbar.
-        </p>
-      {/if}
-    </div>
-  {:else}
-    <!-- Raw statistics overview -->
-    <div class="space-y-2">
-      {#each Object.entries(stats.felder ?? {}) as [fieldName, fieldDiff] (fieldName)}
-        {@const diff = fieldDiff as FeldDiff}
-        {@const changes = getChanges(diff.entfernt, diff.hinzugefügt)}
-        {@const sorted = [...changes].sort(
-          (a, b) => (a.from === a.to ? 1 : 0) - (b.from === b.to ? 1 : 0),
-        )}
-        {#if sorted.length > 0}
-          <div
-            class="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg bg-base-200 px-3 py-2 text-sm"
-          >
-            <span class="font-medium shrink-0">{fieldName}</span>
-            <span class="flex flex-wrap gap-x-3 gap-y-0.5">
-              {#each sorted as c (c.label)}
-                <span class="text-base-content/90">
-                  <span class="opacity-80"
-                    >{c.label.startsWith("aufteilung: ")
-                      ? c.label.slice(12)
-                      : c.label}:</span
-                  >
-                  {#if c.from === c.to}
+<!-- Raw statistics overview -->
+{#snippet felderBlock(
+  felderMap: FelderDiffMap,
+  key: (typeof PRIORITY_SECTIONS)[number]["key"],
+)}
+  {@const displayFelderMap = felderMapWithoutKlientenPrioritaet(felderMap)}
+  <div class="space-y-2">
+    {#each Object.entries(displayFelderMap) as [fieldName, fieldDiff] (`${key}-${fieldName}`)}
+      {@const diff = fieldDiff as FeldDiff}
+      {@const changes = getChanges(diff.entfernt, diff.hinzugefügt)}
+      {@const sorted = [...changes].sort(
+        (a, b) => (a.from === a.to ? 1 : 0) - (b.from === b.to ? 1 : 0),
+      )}
+      {#if sorted.length > 0}
+        <div
+          class="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg bg-base-200 px-3 py-2 text-sm"
+        >
+          <span class="font-medium shrink-0">{fieldName}</span>
+          <span class="flex flex-wrap gap-x-3 gap-y-0.5">
+            {#each sorted as c (c.label + key)}
+              <span class="text-base-content/90">
+                <span class="opacity-80"
+                  >{c.label.startsWith("aufteilung: ")
+                    ? c.label.slice(12)
+                    : c.label}:</span
+                >
+                {#if c.from === c.to}
+                  <span>{c.to}</span>
+                {:else}
+                  <span class="bg-cyan-100 rounded-md p-1">
+                    <span>{c.from}</span>
+                    <span class="opacity-60">→</span>
                     <span>{c.to}</span>
-                  {:else}
-                    <span class="bg-cyan-100 rounded-md p-1">
-                      <span >{c.from}</span>
-                      <span class="opacity-60">→</span>
-                      <span>{c.to}</span>
-                    </span>
-                  {/if}
-                </span>
-              {/each}
-            </span>
-          </div>
-        {/if}
-      {/each}
-    </div>
+                  </span>
+                {/if}
+              </span>
+            {/each}
+          </span>
+        </div>
+      {/if}
+    {/each}
+  </div>
+  {#if Object.keys(displayFelderMap).length === 0}
+    <p class="text-base-content/50 text-sm">Keine Einträge.</p>
+  {:else if !felderMapHasVisibleChanges(felderMap)}
+    <p class="text-base-content/50 text-sm">
+      {PRIORITAET_KEINE_AENDERUNGEN_MSG}
+    </p>
   {/if}
+{/snippet}
+
+<div class="space-y-4">
+  {#each PRIORITY_SECTIONS as section, i (section.key)}
+    {@const key = section.key}
+    {@const title = section.title}
+    {@const felderMap = felderMapForPriority(stats, key)}
+    {@const sectionTitle = sectionTitleWithKlientenCount(title, felderMap, key)}
+    {@const klientenN = klientenCountFromFelderMap(felderMap, key)}
+    <div
+      class="collapse collapse-arrow rounded-lg border border-base-300/60 bg-base-100"
+    >
+      <input
+        type="checkbox"
+        class="min-h-0"
+        bind:checked={priorityCollapseOpen[i]}
+        aria-label="{sectionTitle} ein- oder ausklappen"
+      />
+      <div
+        class="collapse-title text-sm font-semibold uppercase tracking-wide text-base-content/80 min-h-0 py-3"
+      >
+        {sectionTitle}
+      </div>
+      <div class="collapse-content space-y-2">
+        {#if key !== "hoch" && klientenN === 0}
+          <p class="text-base-content/50 text-sm">
+            {PRIORITAET_KEINE_AENDERUNGEN_MSG}
+          </p>
+        {:else}
+          {@render felderBlock(felderMap, key)}
+        {/if}
+      </div>
+    </div>
+  {/each}
 </div>

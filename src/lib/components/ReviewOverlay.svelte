@@ -148,7 +148,7 @@
         </div>
         <!-- Bewertung -->
         {#if assessment && useLLM}
-          <Assessment {assessment} />
+          <Assessment {assessment} diffsResponse={diffs[0]} />
         {/if}
 
         <div

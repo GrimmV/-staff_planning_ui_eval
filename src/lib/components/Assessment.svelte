@@ -1,16 +1,14 @@
 <script lang="ts">
-  import type { Assessment, SignificantAssignment, RelevantChange, StatisticsChange } from "$lib/types";
+  import type { Assessment, DiffsResponse } from "$lib/types";
   import ChatButton from "./ChatButton.svelte";
-  const { assessment } = $props<{ assessment: Assessment }>();
+  const { assessment, diffsResponse } = $props<{
+    assessment: Assessment;
+    diffsResponse: DiffsResponse;
+  }>();
 
-  let showLong = $state(false);
+  let detailLevel = $state<0 | 1 | 2>(0);
 
   const scoreOptions = [
-    {
-      id: "akzeptieren" as const,
-      label: "Akzeptieren",
-      activeClass: "badge-success",
-    },
     {
       id: "eher akzeptieren" as const,
       label: "Eher akzeptieren",
@@ -23,6 +21,16 @@
     },
     { id: "ablehnen" as const, label: "Ablehnen", activeClass: "badge-error" },
   ];
+
+  const chatExplanation = $derived(
+    [
+      assessment.general_assessment,
+      assessment.detail_level_1_assessment,
+      assessment.detail_level_2_assessment,
+    ]
+      .filter(Boolean)
+      .join("\n\n")
+  );
 </script>
 
 <h3 class="text-lg font-semibold text-base-content">KI Assistenz</h3>
@@ -43,28 +51,52 @@
 
   <div class="flex items-center justify-between gap-4 flex-wrap">
     <div class="flex items-center gap-2">
-      <ChatButton context={"Bewertung: " + assessment.score + "\n\n" + "Erklärung: " + assessment.assessment + "\n\n" + "Änderungen: " + assessment.änderungen.map((a: SignificantAssignment) => a.relevant_changes.map((c: RelevantChange) => c.relevant_spalte + ": " + c.änderung).join(", ")).join(", ") + "\n\n" + "Statistiken: " + assessment.statistiken.relevant_changes.map((c: StatisticsChange) => c.relevant_feature + ": " + c.änderung).join(", ")} />
-    </div>
-    <div class="join">
-      <button
-        type="button"
-        class="join-item btn btn-sm {!showLong ? 'btn-active' : 'btn-ghost'}"
-        onclick={() => (showLong = false)}
-      >
-        Zusammenfassung
-      </button>
-      <button
-        type="button"
-        class="join-item btn btn-sm {showLong ? 'btn-active' : 'btn-ghost'}"
-        onclick={() => (showLong = true)}
-      >
-        Details
-      </button>
+      <ChatButton
+        context={"Bewertung: " +
+          assessment.score +
+          "\n\n" +
+          "Erklärung:\n" +
+          chatExplanation +
+          "\n\n" +
+          "Daten:\n" +
+          JSON.stringify(diffsResponse, null, 2)}
+      />
     </div>
   </div>
-  <div class="rounded-lg bg-base-200 border border-base-300 px-4 py-3">
-    <p class="text-base-content/90">
-      {showLong ? assessment.assessment : assessment.short_assessment}
-    </p>
+
+  <div class="rounded-lg bg-base-200 border border-base-300 px-4 py-3 space-y-4">
+    <p class="text-base-content/90 whitespace-pre-wrap">{assessment.general_assessment}</p>
+
+    {#if detailLevel < 1}
+      <button
+        type="button"
+        class="btn btn-link btn-xs text-base-content/50 hover:text-base-content/80 px-0 h-auto min-h-0 font-normal"
+        onclick={() => (detailLevel = 1)}
+      >
+        Zeige mehr
+      </button>
+    {/if}
+
+    {#if detailLevel >= 1}
+      <p class="text-base-content/90 whitespace-pre-wrap border-t border-base-300 pt-4">
+        {assessment.detail_level_1_assessment}
+      </p>
+    {/if}
+
+    {#if detailLevel === 1}
+      <button
+        type="button"
+        class="btn btn-link btn-xs text-base-content/50 hover:text-base-content/80 px-0 h-auto min-h-0 font-normal"
+        onclick={() => (detailLevel = 2)}
+      >
+        Zeige mehr
+      </button>
+    {/if}
+
+    {#if detailLevel >= 2}
+      <p class="text-base-content/90 whitespace-pre-wrap border-t border-base-300 pt-4">
+        {assessment.detail_level_2_assessment}
+      </p>
+    {/if}
   </div>
 </div>
