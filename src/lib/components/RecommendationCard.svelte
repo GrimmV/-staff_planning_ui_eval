@@ -113,9 +113,9 @@
 </script>
 
 <div
-  class="card bg-base-100 shadow-xl border border-base-200 max-w-4xl mx-auto"
+  class="card overflow-visible bg-base-100 shadow-xl border border-base-200 max-w-4xl mx-auto"
 >
-  <div class="card-body gap-6">
+  <div class="card-body gap-6 overflow-visible">
     <!-- Header: Mitarbeiter & Klient side by side -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Mitarbeiter -->
@@ -264,7 +264,7 @@
 
     <!-- Recommendation & actions -->
     <section
-      class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 overflow-visible"
     >
       <div>
         <h3 class="text-base font-semibold flex items-center gap-2">
@@ -287,7 +287,7 @@
       </div>
 
       <div
-        class="relative flex flex-wrap gap-2 justify-end"
+        class="relative flex flex-wrap gap-2 justify-end overflow-visible"
         bind:this={reviewContainer}
       >
         {#if !isAlternativeSelected}
@@ -305,7 +305,7 @@
 
         {#if isReviewOpen}
           <div
-            class="absolute left-0 bottom-full mt-2 z-20 max-w-xs rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm shadow-md w-96"
+            class="absolute right-0 bottom-full z-20 mb-2 w-[min(32rem,calc(100vw-2rem))] rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm shadow-md"
           >
             <p>
               Wenn du weiter klickst, prüfen wir, wie sich diese Zuordnung auf

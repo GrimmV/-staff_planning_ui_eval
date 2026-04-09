@@ -2,6 +2,7 @@
   import AssignmentsPopover from "./AssignmentsPopover.svelte";
   import RecommendationCard from "./RecommendationCard.svelte";
   import ReviewOverlay from "./ReviewOverlay.svelte";
+  import TimeExpiredHandler from "./TimeExpiredHandler.svelte";
   import type { Klient, Mitarbeiter } from "$lib/types";
 
   interface RecommendationEntry {
@@ -120,8 +121,8 @@
 
   const handleAccept = (payload: { mitarbeiter: string; klient: string }) => {
     isReviewOverlayOpen = false;
-    console.log("handleAccept", payload);
-    handleAssign(payload);
+    const klient = current?.klient.id ?? payload.klient;
+    handleAssign({ ...payload, klient });
   };
 
   const handleSelectAlternative = (payload: {
@@ -132,12 +133,67 @@
     active_mitarbeiter = payload.mitarbeiter;
   };
 
+  const handleTimerExpirePick = (payload: {
+    mitarbeiter: string;
+    klient: string;
+  }) => {
+    handleSelectAlternative(payload);
+    handleAccept(payload);
+  };
+
+  let timerRunning = $state(false);
+  let timerSecondsLeft = $state<number | null>(null);
+  /** When the countdown is off, user can expand the card; cleared when the timer ends or the top recommendation changes. */
+  let cardManuallyOpen = $state(false);
+
+  const cardExpanded = $derived(timerRunning || cardManuallyOpen);
+
+  function handleTimerRunningChange(running: boolean) {
+    const wasRunning = timerRunning;
+    timerRunning = running;
+    if (wasRunning && !running) {
+      cardManuallyOpen = false;
+    }
+  }
+
+  function handleTimerSecondsChange(secondsLeft: number | null) {
+    timerSecondsLeft = secondsLeft;
+  }
+
+  $effect(() => {
+    currentTopKey;
+    cardManuallyOpen = false;
+  });
+
   $effect(() => {
     const n = ma_assignments.length;
     if (completedLabels.length > n) {
       completedLabels = completedLabels.slice(0, n);
     }
   });
+
+  /** Nur alternative Klienten (ohne Hauptempfehlung) — für Pfeile im Review-Overlay. */
+  const reviewAlternatives = $derived(
+    current
+      ? (current.alternativeKlienten ?? []).map((k: Klient) => ({
+          mitarbeiterId: current.mitarbeiter.id,
+          mitarbeiterName: current.mitarbeiter.name,
+          klientId: k.id,
+          klientName: k.name,
+        }))
+      : [],
+  );
+
+  const reviewPrimaryAssignment = $derived(
+    current
+      ? {
+          mitarbeiterId: current.mitarbeiter.id,
+          mitarbeiterName: current.mitarbeiter.name,
+          klientId: current.klient.id,
+          klientName: current.klient.name,
+        }
+      : undefined,
+  );
 
   function resolveNamesFromCurrent(
     c: RecommendationEntry,
@@ -182,6 +238,13 @@
 {:else}
   <section class="space-y-4 w-3xl mx-auto">
     <header class="space-y-2">
+      <TimeExpiredHandler
+        {current}
+        {currentTopKey}
+        onExpirePick={handleTimerExpirePick}
+        onTimerRunningChange={handleTimerRunningChange}
+        onTimerSecondsChange={handleTimerSecondsChange}
+      />
       <div
         class="flex items-center justify-between gap-2 text-sm text-base-content/70"
       >
@@ -213,14 +276,42 @@
         <span>Alle Klienten wurden zugeordnet.</span>
       </div>
     {:else}
-      <RecommendationCard
-        mitarbeiter={current.mitarbeiter}
-        klient={current.klient}
-        alternativeKlienten={current.alternativeKlienten}
-        onAccept={handleAccept}
-        onSelectAlternative={handleSelectAlternative}
-        onOpenReview={openReviewOverlay}
-      />
+      <div
+        class="max-w-4xl mx-auto rounded-xl border border-base-200 bg-base-100"
+      >
+        <button
+          type="button"
+          class="flex w-full items-center justify-between gap-3 rounded-t-xl px-4 py-3 text-left text-sm font-medium hover:bg-base-200/50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+          disabled={timerRunning}
+          onclick={() => {
+            if (!timerRunning) cardManuallyOpen = !cardManuallyOpen;
+          }}
+          aria-expanded={cardExpanded}
+        >
+          <span class="min-w-0 truncate">
+            Empfehlung: {current.mitarbeiter.name} – {current.klient.name}
+          </span>
+          <span
+            class="shrink-0 text-base-content/50 transition-transform duration-200 {cardExpanded
+              ? 'rotate-180'
+              : ''}"
+            aria-hidden="true"
+            >▼</span
+          >
+        </button>
+        {#if cardExpanded}
+          <div class="rounded-b-xl border-t border-base-200">
+            <RecommendationCard
+              mitarbeiter={current.mitarbeiter}
+              klient={current.klient}
+              alternativeKlienten={current.alternativeKlienten}
+              onAccept={handleAccept}
+              onSelectAlternative={handleSelectAlternative}
+              onOpenReview={openReviewOverlay}
+            />
+          </div>
+        {/if}
+      </div>
     {/if}
   </section>
   {#if isReviewOverlayOpen}
@@ -232,6 +323,10 @@
       {ma_assignments}
       {klient_assignments}
       {useLLM}
+      alternatives={reviewAlternatives}
+      primaryAssignment={reviewPrimaryAssignment}
+      onAlternativeChange={handleSelectAlternative}
+      {timerSecondsLeft}
     />
   {/if}
 {/if}

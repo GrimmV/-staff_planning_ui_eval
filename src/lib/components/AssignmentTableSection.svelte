@@ -8,11 +8,12 @@
     rowNachherHochUndGeaendert,
   } from "$lib/utils/assignmentTableFilter";
 
-  const {
+  let {
     parsed,
     variant,
     vorherKlientSet,
     nachherKlientSet,
+    showQualiFitColumn = true,
     filterHochGeaendert = false,
     vorherParsedForCompare,
     filteredNachherKlientKeys = null,
@@ -21,6 +22,7 @@
     variant: "neu" | "alt";
     vorherKlientSet: ReadonlySet<string>;
     nachherKlientSet: ReadonlySet<string>;
+    showQualiFitColumn?: boolean;
     /** Nachher only: keep rows with Priorität hoch that differ from Vorher (same Klient). */
     filterHochGeaendert?: boolean;
     vorherParsedForCompare?: { headers: string[]; rows: string[][] };
@@ -73,6 +75,13 @@
         !l.includes("tag")
       );
     });
+  }
+
+  function isQualiFitHeader(header: string): boolean {
+    const h = header.toLowerCase();
+    return (
+      h.includes("quali-fit") || h.includes("quali fit") || h.includes("qualifit")
+    );
   }
 
   /** All Erfahrung Klient / Schule columns (both listed when the table has two). */
@@ -301,27 +310,34 @@
   const erfahrungSpalten = $derived(
     erfahrungKlientSchuleSpaltenIndices(parsed.headers),
   );
+  const visibleColIndices = $derived.by(() => {
+    const indices = parsed.headers.map((_header: string, idx: number) => idx);
+    if (showQualiFitColumn) return indices;
+    return indices.filter(
+      (idx: number) => !isQualiFitHeader(parsed.headers[idx] ?? ""),
+    );
+  });
 </script>
 
 {#if parsed.headers.length && parsed.rows.length}
   <tbody class={isNeu ? "border-b-2 border-base-300" : ""}>
     <tr class={headerRowClass}>
       <td
-        colspan={Math.max(parsed.headers.length, 1)}
+        colspan={Math.max(visibleColIndices.length, 1)}
         class="{headerTextClass} px-4 py-2"
       >
         {label}
       </td>
     </tr>
     <tr>
-      {#each parsed.headers as h (h)}
-        <th class="font-semibold whitespace-nowrap">{h}</th>
+      {#each visibleColIndices as colIdx (colIdx)}
+        <th class="font-semibold whitespace-nowrap">{parsed.headers[colIdx]}</th>
       {/each}
     </tr>
     {#if displayRows.length === 0 && filterHochGeaendert}
       <tr>
         <td
-          colspan={Math.max(parsed.headers.length, 1)}
+          colspan={Math.max(visibleColIndices.length, 1)}
           class="text-base-content/60 text-sm py-4"
         >
           {#if isNeu}
@@ -342,7 +358,8 @@
             ? "[&>td]:border-b-2 [&>td]:border-black"
             : ""}
         >
-          {#each row as cell, colIdx (colIdx)}
+          {#each visibleColIndices as colIdx (colIdx)}
+            {@const cell = row[colIdx] ?? ""}
             {@const tagBisRed =
               tagBisConflict &&
               (colIdx === klientTagBisCol || colIdx === mitarbeiterTagBisCol)}

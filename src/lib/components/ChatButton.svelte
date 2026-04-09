@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MessageSquare, X } from '@lucide/svelte';
+	import { tick } from 'svelte';
 	import { fetchOpenAI, type OpenAIResponse } from '$lib/chat';
 
 	interface Props {
@@ -30,21 +31,33 @@
 	let errorMessage: string | null = $state(null);
 	let responseText: string | null = $state(null);
 	let rootEl: HTMLDivElement | null = $state(null);
+	let dialogEl: HTMLDivElement | null = $state(null);
 
-	// viewport coordinates of button's top-left
-	let anchorBottom = $state(0);
-	let anchorRight = $state(0);
+	// viewport coordinates of dialog position
+	let dialogTop = $state(0);
+	let dialogLeft = $state(0);
 
 	function positionToButton() {
 		if (!rootEl) return;
 		const r = rootEl.getBoundingClientRect();
-		anchorBottom = r.bottom;
-		anchorRight = r.right;
+		const margin = 8;
+		const desiredTop = r.top;
+		const desiredLeft = r.right + margin;
+		const dialogWidth = dialogEl?.offsetWidth ?? 336;
+		const dialogHeight = dialogEl?.offsetHeight ?? 0;
+
+		const maxLeft = Math.max(margin, window.innerWidth - dialogWidth - margin);
+		const maxTop = Math.max(margin, window.innerHeight - dialogHeight - margin);
+
+		dialogLeft = Math.min(desiredLeft, maxLeft);
+		dialogTop = Math.max(margin, Math.min(desiredTop, maxTop));
 	}
 
-	function openDialog() {
+	async function openDialog() {
 		positionToButton();
 		isOpen = true;
+		await tick();
+		positionToButton();
 		onopen?.();
 	}
 
@@ -133,12 +146,12 @@
 		role="dialog"
 		aria-label="Chat with the system"
 		tabindex="-1"
-		class="fixed z-[9999] w-84 rounded-lg border border-gray-200 bg-white shadow-xl p-2"
+		class="fixed z-[9999] w-84 max-h-[calc(100vh-16px)] overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-xl"
 		style="
-			bottom: {anchorBottom - 380}px;
-			right: {anchorRight + 130}px;
-			transform: translate(-8px, -8px) translate(-100%, -100%);
+			top: {dialogTop}px;
+			left: {dialogLeft}px;
 		"
+		bind:this={dialogEl}
 		use:portal
 		>
 			<div class="mb-2 flex items-center justify-between">

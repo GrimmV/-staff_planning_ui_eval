@@ -29,8 +29,42 @@
     return set;
   }
 
+  function isQualiFitHeader(header: string): boolean {
+    const h = header.toLowerCase();
+    return (
+      h.includes("quali-fit") || h.includes("quali fit") || h.includes("qualifit")
+    );
+  }
+
+  function parseNumeric(cell: string): number | null {
+    const normalized = cell.trim().replace(",", ".");
+    if (!normalized) return null;
+    const n = Number.parseFloat(normalized);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function hasNegativeQualiFit(parsed: {
+    headers: string[];
+    rows: string[][];
+  }): boolean {
+    const qualiFitIndices = parsed.headers
+      .map((header, idx) => (isQualiFitHeader(header) ? idx : -1))
+      .filter((idx) => idx >= 0);
+    if (qualiFitIndices.length === 0) return false;
+    for (const row of parsed.rows) {
+      for (const idx of qualiFitIndices) {
+        const n = parseNumeric(row[idx] ?? "");
+        if (n !== null && n < 0) return true;
+      }
+    }
+    return false;
+  }
+
   const vorherKlientSet = $derived(klientSetFromTable(vorherParsed));
   const nachherKlientSet = $derived(klientSetFromTable(nachherParsed));
+  const showQualiFitColumn = $derived(
+    hasNegativeQualiFit(vorherParsed) || hasNegativeQualiFit(nachherParsed),
+  );
 
   const filteredNachherKlientKeys = $derived.by(() => {
     if (!filterNurHochGeaendert) return null;
@@ -77,6 +111,7 @@
         variant="neu"
         {vorherKlientSet}
         {nachherKlientSet}
+        showQualiFitColumn={showQualiFitColumn}
         filterHochGeaendert={filterNurHochGeaendert}
         vorherParsedForCompare={vorherParsed}
       />
@@ -85,6 +120,7 @@
         variant="alt"
         {vorherKlientSet}
         {nachherKlientSet}
+        showQualiFitColumn={showQualiFitColumn}
         filterHochGeaendert={filterNurHochGeaendert}
         filteredNachherKlientKeys={filteredNachherKlientKeys}
       />
