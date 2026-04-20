@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Assessment, DiffsResponse } from "$lib/types";
   import ChatButton from "./ChatButton.svelte";
+  import uploadClicks from "$lib/firebase";
   const { assessment, diffsResponse } = $props<{
     assessment: Assessment;
     diffsResponse: DiffsResponse;
@@ -31,6 +32,16 @@
       .filter(Boolean)
       .join("\n\n")
   );
+
+  const handleDetailLevelChange = (level: 0 | 1 | 2) => {
+    detailLevel = level;
+    uploadClicks({
+      username: "default",
+      action: "detailLevelIncrease",
+      detailLevel: level,
+      datetime: new Date(),
+    });
+  };
 </script>
 
 <h3 class="text-lg font-semibold text-base-content">KI Assistenz</h3>
@@ -71,7 +82,7 @@
       <button
         type="button"
         class="btn btn-link btn-xs text-base-content/50 hover:text-base-content/80 px-0 h-auto min-h-0 font-normal"
-        onclick={() => (detailLevel = 1)}
+        onclick={() => handleDetailLevelChange(1)}
       >
         Zeige mehr
       </button>
@@ -87,7 +98,7 @@
       <button
         type="button"
         class="btn btn-link btn-xs text-base-content/50 hover:text-base-content/80 px-0 h-auto min-h-0 font-normal"
-        onclick={() => (detailLevel = 2)}
+        onclick={() => handleDetailLevelChange(2)}
       >
         Zeige mehr
       </button>

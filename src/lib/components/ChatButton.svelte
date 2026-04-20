@@ -2,6 +2,7 @@
 	import { MessageSquare, X } from '@lucide/svelte';
 	import { tick } from 'svelte';
 	import { fetchOpenAI, type OpenAIResponse } from '$lib/chat';
+	import uploadClicks from "$lib/firebase";
 
 	interface Props {
 		context?: string;
@@ -95,6 +96,13 @@
 			const result: OpenAIResponse = await fetchOpenAI(fullPrompt);
 			responseText = result.response;
 			onresponse?.({ prompt: prompt.trim(), response: responseText ?? '' });
+			uploadClicks({
+				username: "default",
+				action: "chat",
+				prompt: prompt.trim(),
+				response: responseText ?? '',
+				datetime: new Date(),
+			});
 		} catch (e) {
 			errorMessage = e instanceof Error ? e.message : 'Something went wrong';
 		} finally {

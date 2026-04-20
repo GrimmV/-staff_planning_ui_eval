@@ -5,6 +5,7 @@
   import ReviewAssignments from "./ReviewAssignments.svelte";
   import ReviewAssignmentsNoLLM from "./ReviewAssignmentsNoLLM.svelte";
   import Assessment from "./Assessment.svelte";
+  import uploadClicks from "$lib/firebase";
 
   type ReviewAlternativeRow = {
     mitarbeiterId: string;
@@ -46,6 +47,17 @@
   let diffs = $state<DiffsResponse[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  const trackClick = (action: string, extra: Record<string, unknown> = {}) => {
+    uploadClicks({
+      username: "default",
+      action,
+      mitarbeiter: new_ma,
+      klient: new_client,
+      ...extra,
+      datetime: new Date(),
+    });
+  };
 
   async function loadDiffs() {
     loading = true;
@@ -106,6 +118,7 @@
       mitarbeiter: new_ma,
       klient: new_client,
     };
+    trackClick("reviewOverlayAccept");
     console.log("handleAccept", payload);
     onAccept(payload);
   };
@@ -146,6 +159,10 @@
         mitarbeiter: entry.mitarbeiterId,
         klient: entry.klientId,
       });
+      trackClick("reviewOverlayNavigateAlternative", {
+        direction: delta > 0 ? "next" : "previous",
+        selectedKlient: entry.klientId,
+      });
       return;
     }
     const idx = alternatives.findIndex(
@@ -159,6 +176,10 @@
       mitarbeiter: entry.mitarbeiterId,
       klient: entry.klientId,
     });
+    trackClick("reviewOverlayNavigateAlternative", {
+      direction: delta > 0 ? "next" : "previous",
+      selectedKlient: entry.klientId,
+    });
   }
 
   function formatCountdown(totalSec: number): string {
@@ -170,6 +191,11 @@
   const isFinalThirtySeconds = $derived(
     timerSecondsLeft !== null && timerSecondsLeft <= 30,
   );
+
+  const handleClose = () => {
+    trackClick("reviewOverlayClose");
+    onClose();
+  };
 </script>
 
 <div class="fixed inset-0 z-40 flex items-center justify-center">
@@ -191,7 +217,7 @@
       type="button"
       class="btn btn-ghost btn-sm absolute right-3 top-3 z-10"
       aria-label="Schließen"
-      onclick={onClose}
+      onclick={handleClose}
     >
       ✕
     </button>

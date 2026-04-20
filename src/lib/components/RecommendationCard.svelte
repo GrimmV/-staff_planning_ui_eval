@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { formatDateGerman, floatToTime } from "$lib/utils/format";
   import type { Klient, Mitarbeiter } from "$lib/types";
+  import uploadClicks from "$lib/firebase";
 
   const {
     mitarbeiter,
@@ -71,6 +72,17 @@
   let isReviewOpen = $state(false);
   let reviewContainer: HTMLDivElement | null = null;
 
+  const trackClick = (action: string, extra: Record<string, unknown> = {}) => {
+    uploadClicks({
+      username: "default",
+      action,
+      mitarbeiter: mitarbeiter.id,
+      klient: currentKlient.id,
+      ...extra,
+      datetime: new Date(),
+    });
+  };
+
   const handleDocumentClick = (event: MouseEvent) => {
     if (!isReviewOpen || !reviewContainer) return;
     const target = event.target as Node | null;
@@ -87,16 +99,21 @@
   });
 
   const handleAccept = () => {
+    trackClick("recommendationAccept");
     onAccept?.({ mitarbeiter: mitarbeiter.id, klient: currentKlient.id });
     console.log("handleAccept", mitarbeiter.id, currentKlient.id);
   };
 
   const handleReviewAlternative = () => {
     isReviewOpen = true;
+    trackClick("recommendationOpenReview");
   };
 
   const handleSelectAlternative = (alternative: Klient) => {
     selectedKlient = alternative;
+    trackClick("recommendationSelectAlternative", {
+      selectedKlient: alternative.id,
+    });
 
     onSelectAlternative?.({ mitarbeiter: mitarbeiter.id, klient: alternative.id });
   };
@@ -104,10 +121,12 @@
   const handleSelectMainKlient = () => {
     selectedKlient = undefined;
     isReviewOpen = false;
+    trackClick("recommendationSelectPrimary");
   };
 
   const handleContinueReview = () => {
     isReviewOpen = false;
+    trackClick("recommendationContinueReview");
     onOpenReview?.();
   };
 </script>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteSet } from "svelte/reactivity";
   import AssignmentTableSection from "./AssignmentTableSection.svelte";
+  import uploadClicks from "$lib/firebase";
   import {
     klientColIdx,
     rowNachherHochUndGeaendert,
@@ -83,6 +84,16 @@
     }
     return keys;
   });
+
+  const handleToggleHighPriorityFilter = () => {
+    filterNurHochGeaendert = !filterNurHochGeaendert;
+    uploadClicks({
+      username: "default",
+      action: "assignmentTableToggleHighPriorityFilter",
+      enabled: filterNurHochGeaendert,
+      datetime: new Date(),
+    });
+  };
 </script>
 
 <div class="rounded-xl border border-base-300 bg-base-100 overflow-hidden">
@@ -97,7 +108,7 @@
       class="btn btn-sm btn-ghost"
       title="Nur Zeilen mit Priorität hoch, die sich gegenüber Vorher geändert haben (gleicher Klient)."
       aria-pressed={filterNurHochGeaendert}
-      onclick={() => (filterNurHochGeaendert = !filterNurHochGeaendert)}
+      onclick={handleToggleHighPriorityFilter}
     >
       {filterNurHochGeaendert
         ? "Alle anzeigen"

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import TimeExpiredModal from "./TimeExpiredModal.svelte";
+  import uploadClicks from "$lib/firebase";
   import type { Recommendation } from "$lib/types";
 
   const {
@@ -59,6 +60,15 @@
     resetTimerUi();
     timerSnap = c;
     timerSecondsLeft = totalSec;
+    uploadClicks({
+      username: "default",
+      action: "timerStart",
+      mitarbeiter: c.mitarbeiter.id,
+      klient: c.klient.id,
+      durationSeconds: totalSec,
+      alternativesCount: c.alternativeKlienten.length,
+      datetime: new Date(),
+    });
     let seconds = totalSec;
     timerIntervalId = setInterval(() => {
       seconds -= 1;
